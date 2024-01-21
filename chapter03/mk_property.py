@@ -32,25 +32,26 @@ class Process1:
     def dtype(self):
         return jnp.dtype(object)
 
-
-@dataclass
-class Process2:
+ 
+ dataclass
+ lass Process2:
     @dataclass
     class State
         price: Union[jnp.ndarray, Optional[int]]
         is_prev_mv_up: Optional[bool]
-
+ 
         @property
         def dtype(self):
             return jnp.dtype(object)
-
+ 
     alpha2: float = 0.75  # strength of reverse-pull (value in [0, 1])
+ rom dataclasses import dataclass
+   def up_prob(self, state: State) -> float:
+       """
+       To implement the formula of
+        $$\mathbb{P}[X_{t+1} = X_t + 1] = \begin{cases} 0.5(1 - \alpha(X_t - X_{t-1}) & t > 0 \\
+        0.5 & t = 0\end{cases}$$
 
-    def up_prob(self, state: State) -> float:
-        """
-        To implement the formula of
-            $$\mathbb{P}[X_{t+1} = X_t + 1] = {}$$
-        
         The first condition of t = 0, we produce infinite prob of 0 due to the presistance of the reserved
         random generation number.
 
