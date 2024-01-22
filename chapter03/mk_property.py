@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from typing import Mapping, Union, Optional
+from loguru import logger
 
 import jax
 import jax.numpy as jnp
 
+
 k = jax.random.PRNGKey(42)
-handy_map: Mapping[Optional[bool], int]
+handy_map: Mapping[Optional[bool], int] = {True: -1, False: 1, None: 0}
 
 
 @dataclass(frozen=True)
@@ -32,39 +34,30 @@ class Process1:
     def dtype(self):
         return jnp.dtype(object)
 
- 
- dataclass
- lass Process2:
+
+@dataclass
+class Process2:
     @dataclass
-    class State
+    class State:
         price: Union[jnp.ndarray, Optional[int]]
         is_prev_mv_up: Optional[bool]
- 
-        @property
-        def dtype(self):
-            return jnp.dtype(object)
- 
+
     alpha2: float = 0.75  # strength of reverse-pull (value in [0, 1])
- rom dataclasses import dataclass
-   def up_prob(self, state: State) -> float:
-       """
-       To implement the formula of
+
+    def up_prob(self, state: State) -> float:
+        """
+        The implementation the formula:
         $$\mathbb{P}[X_{t+1} = X_t + 1] = \begin{cases} 0.5(1 - \alpha(X_t - X_{t-1}) & t > 0 \\
         0.5 & t = 0\end{cases}$$
 
-        The first condition of t = 0, we produce infinite prob of 0 due to the presistance of the reserved
-        random generation number.
-
-        In the second part of the conditional formula, following the initial `Null` price (X_0, Null), will
-        also produce an output of 0.5, which bring us back to the first condition. And, if we followed the 
-        assumption of assigning the inital price `price_0 = 0` this would produce a baised results.
-
-
+        We will add trick of using Mapping variable to map the difference between
+        price_t and price_t-1
         """
-        # We won't implement the conditional aspect of t = 1 due to the random generation
-        # that consists of producing only zeros if p = 0.5
-        # Now, if we also applied the formula of t > 0
-        return 0.5 * (1 - self.alpha2 * (self.price))
+        return 0.5 * (1 + self.alpha2 * (handy_map[state.is_prev_mv_up]))
 
     def next_state(self, state: State) -> State:
         up_move: jnp.ndarray = jax.random.binomial(k, 1, self.up_prob(state))
+#        logger.debug(f"Prob: {up_move}, Price_t+1: {state.price + 2 * up_move - 1}")
+        return Process2.State(
+                price=state.price + 2 * up_move - 1,
+                is_prev_mv_up=bool(up_move))
