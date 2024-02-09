@@ -36,10 +36,11 @@ if __name__ == "__main__":
         num_traces=num_traces
     )
 
-    logger.info("Markow Property of Process1")
+    logger.info("Markov Property of Process1")
     print(process1_traces)
     print(f"Dimension: {process1_traces.shape}")
 
+# ------------------------------------------------------------
     logger.debug("Running process2")
     process2_traces: np.ndarray = process2_price_traces(
         start_price=start_price,
@@ -47,10 +48,11 @@ if __name__ == "__main__":
         time_steps=time_steps,
         num_traces=num_traces
     )
-    logger.info("Markow Property of Process2")
+    logger.info("Markov Property of Process2")
 #    print(process2_traces)
     print(f"Dimension: {process2_traces.shape}")
 
+# ------------------------------------------------------------
     logger.debug("Running process3")
     process3_traces: np.ndarray = process3_price_traces(
             start_price=start_price,
@@ -58,19 +60,32 @@ if __name__ == "__main__":
             time_steps=time_steps,
             num_traces=num_traces)
 
-    logger.info("Markow Property of Process3")
+    logger.info("Markov Property of Process3")
 #    print(process3_traces)
     print(f"Dimension: {process3_traces.shape}")
 
+# ------------------------------------------------------------
+    logger.info("Stock Price Markov Process3")
+
+    stock_price_process3_traces: np.ndarray = mkprocess3_price_traces(
+            start_price=start_price,
+            alpha3=alpha3,
+            time_steps=time_steps,
+            num_traces=num_traces)
+
+    logger.info("Markov Property of Process3")
+    print(f"Dimension: {process3_traces.shape}")
+# ------------------------------------------------------------
     trace1 = process1_traces[0]
     trace2 = process2_traces[0]
     trace3 = process3_traces[0]
+    trace4 = stock_price_process3_traces[0]
 
     logger.debug("Plotting the curves")
-    plot_single_trace_all_processes(trace1, trace2, trace3)
+    plot_single_trace_all_processes(trace2, trace3, trace4)
 
     plot_distribution_at_time_all_processes(
-        process1_traces,
         process2_traces,
-        process3_traces
+        process3_traces,
+        stock_price_process3_traces
     )

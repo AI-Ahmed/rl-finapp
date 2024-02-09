@@ -2,11 +2,12 @@ import itertools
 import logging
 from typing import Generator
 
-import jax
 import numpy as np
-import jax.numpy as jnp
 
-from chapter03.mk_property import Process1, Process2, Process3
+from chapter03.processes import Process1, Process2, Process3
+from chapter03.mk_property import NonTerminal
+from chapter03.stock_mk import StockPriceMP3, StateMP3
+from gen_utils.distribution import Constant
 
 logging.getLogger(__name__)
 
@@ -59,4 +60,21 @@ def process3_price_traces(
         np.fromiter((start_price + s.num_up_move - s.num_down_move
                     for s in itertools.islice(
                      simulation(process, start_state), time_steps + 1)), float)
+        for _ in range(num_traces)])
+
+
+def mkprocess3_price_traces(
+    start_price: int,
+    alpha3: float,
+    time_steps: int,
+    num_traces: int) -> np.ndarray:
+
+    mp = StockPriceMP3(alpha3=alpha3)
+    start_state_distribution = Constant(
+            NonTerminal(StateMP3(num_up_moves=0, num_down_moves=0))
+    )
+    return np.vstack([
+        np.fromiter((start_price + s.state.num_up_moves - s.state.num_down_moves
+                    for s in itertools.islice(mp.simulation(start_state_distribution),
+                        time_steps + 1)), float)
         for _ in range(num_traces)])
