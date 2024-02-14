@@ -6,7 +6,7 @@ from loguru import logger
 
 import numpy as np
 
-logger.add("../ch03_logs.log",
+logger.add("ch03_logs.log",
            level="DEBUG",
            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}")
 
