@@ -2,18 +2,24 @@
 This code is the JAX implementation of the `common_funcs.py` of the book
 """
 
-from typing import Callable
+from typing import Callable, Union
+
+import chex
 import numpy as np
 import jax.numpy as jnp
+
+FloatLike = Union[float, np.float16, np.float32, np.float64]
+IntLike = Union[int, np.int16, np.int32, np.float64]
+PRNGKey = chex.PRNGKey
 
 eps = 1e-8
 
 
-def get_logistic_func(alpha: float) -> Callable[[float], float]:
+def get_logistic_func(alpha: FloatLike) -> Callable[[FloatLike], FloatLike]:
     return lambda x: 1. / (1 + jnp.exp(-alpha * x))
 
 
-def get_unit_sigmoid_func(alpha: float) -> Callable[[float], float]:
+def get_unit_sigmoid_func(alpha: FloatLike) -> Callable[[FloatLike], FloatLike]:
     return lambda x: 1. / (1 + (1 / jnp.where(x == 0, eps, x) - 1) ** alpha)
 
 

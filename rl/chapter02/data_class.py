@@ -1,13 +1,22 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Generic, TypeVar, Sequence
+
+import chex
+from chex import dataclass
+
+import distrax
+
+# from dataclasses import dataclass
+from typing import Generic, TypeVar, Sequence, Union
 
 import jax
-import jax.numpy as jnp
+import jax.numpy as Array
 import numpy as np
 
+FloatLike = Union[float, np.float16, np.float32, np.float64]
+IntLike = Union[int, np.int16, np.int32, np.float64]
+PRNGKey = chex.PRNGKey
 # A type variable named "A"
-A = TypeVar("A")
+A = TypeVar('A', bound=IntLike)
 
 
 class Distribution(ABC, Generic[A]):
@@ -17,31 +26,33 @@ class Distribution(ABC, Generic[A]):
 
 
 @dataclass(frozen=True)  # for converting the class to immutable dataclass
-class Die(Distribution[int]):
-    sides: int
-    k: jnp.ndarray = jax.random.PRNGKey(42)
+class Die(Distribution[IntLike]):
+    sides: IntLike
 
     def sample(self):
-        return jax.random.randint(self.k, 1, self.sides)
+        k: PRNGKey = jax.random.PRNGKey(42)
+        return jax.random.randint(k, 1, self.sides)
 
 
 @dataclass
-class Gaussian(Distribution[float]):
-    mu: float
-    sigma: float
-    k: jnp.ndarray = jax.random.PRNGKey(42)
+class Gaussian(Distribution[FloatLike]):
+    mu: FloatLike
+    sigma: FloatLike
 
-    def sample(self) -> float:
-        return self.mu + self.sigma * jax.random.normal(self.k)
+    def sample(self) -> FloatLike:
+        rng: PRNGKey = jax.random.PRNGKey(42)
+        return self.mu + self.sigma * jax.random.normal(rng)
 
-    def n_sample(self, n: int) -> Sequence[float]:
-        return [self.sample() for _ in range(n)]
+    def n_sample(self, n: IntLike) -> Sequence[FloatLike]:
+        rng: PRNGKey = jax.random.PRNGKey(42)
+        dist = distrax.Normal(0., 1.)
+        return dist.sample(rng, sample_shape=n)
 
-    def np_n_sample(self, n: int) -> Sequence[float]:
+    def np_n_sample(self, n: IntLike) -> Sequence[FloatLike]:
         return np.random.normal(self.mu, self.sigma, n)
 
-    def jax_n_sample(self, n: int) -> Sequence[float]:
-        return self.mu + self.sigma * jax.random.normal(self.k, shape=(n, ), dtype=jnp.float32)
+    def jax_n_sample(self, n: IntLike) -> Sequence[FloatLike]:
+        return self.mu + self.sigma * jax.random.normal(self.k, shape=(n, ), dtype=Array.float32)
 
 
 if __name__ == "__main__":

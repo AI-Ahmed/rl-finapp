@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import jax
 
-k = jax.random.PRNGKey(42)
-
 
 class Distribution(ABC):
     @abstractmethod
@@ -15,6 +13,7 @@ class Die(Distribution):
         self.sides = sides
 
     def sample(self):
+        k = jax.random.PRNGKey(42)
         return jax.random.randint(k, 1, self.sides)
 
     def __repr__(self):

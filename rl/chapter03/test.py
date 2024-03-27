@@ -1,10 +1,19 @@
 import logging
+
+import chex
+from typing import Union
+
 from chapter03.utils import *
 from chapter03.plt_utils import *
 
 from loguru import logger
 
 import numpy as np
+
+Array = Union[chex.Array, chex.ArrayNumpy]
+FloatLike = Union[float, np.float16, np.float32, np.float64]
+IntLike = Union[int, np.int16, np.int32, np.float64]
+PRNGKey = chex.PRNGKey
 
 logger.add("ch03_logs.log",
            level="DEBUG",
@@ -19,13 +28,13 @@ logging_logger.addHandler(logger._core.handlers[0])
 
 if __name__ == "__main__":
     # testing variables
-    start_price: int = 100
-    level_param: int = 100
-    alpha1: float = 0.25
-    alpha2: float = 0.75
-    alpha3: float = 1.0
-    time_steps: int = 100
-    num_traces: int = 1000
+    start_price: IntLike = 100
+    level_param: IntLike = 100
+    alpha1: FloatLike = 0.25
+    alpha2: FloatLike = 0.75
+    alpha3: FloatLike = 1.0
+    time_steps: IntLike = 100
+    num_traces: IntLike = 1000
 
     logger.debug("Running Process1")
     process1_traces: np.ndarray = process1_price_traces(
