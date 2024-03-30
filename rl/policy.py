@@ -27,9 +27,10 @@ class Policy(ABC, Generic[S, A]):
 @dataclass(frozen=True)
 class DeterministicPolicy(Policy[S, A]):
     action_for: Callable[[S], A]
+    reorder_point: IntLike
 
     def act(self, state: NonTerminal[S]) -> Constant[A]:
-        return Constant(self.action_for(state.state))
+        return Constant(value=self.action_for(state.state)) # TODO: THIS SHOULD HAVE APPLY
 
 
 @dataclass(frozen=True)
@@ -37,4 +38,4 @@ class UniformPolicy(Policy[S, A]):
     valid_actions: Callable[[S], A]
 
     def act(self, state: NonTerminal[S]) -> Choose[A]:
-        return Choose(self.valid_actions(state.state))
+        return Choose(value=self.valid_actions(state.state))

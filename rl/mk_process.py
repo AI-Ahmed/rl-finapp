@@ -141,7 +141,7 @@ class MarkovRewardProcess(MarkovProcess[S]):
             next_distribution = self.transition_reward(state)
 
             next_state, reward = next_distribution.sample()
-            yield TransitionStep(state, next_state, reward)
+            yield TransitionStep(state=state, next_state=next_state, reward=reward)
 
             state = next_state
 
@@ -151,7 +151,7 @@ class MarkovRewardProcess(MarkovProcess[S]):
         def next_state(distribution=distribution):
             next_s, _ = distribution.sample()
             return next_s
-        return SampledDistribution(next_state)
+        return SampledDistribution(sampler=next_state)
 
 
 StateReward = FiniteDistribution[Tuple[State[S], FloatLike]]
@@ -176,8 +176,8 @@ class FiniteMarkovRewardProcess(FiniteMarkovProcess[S], MarkovRewardProcess[S]):
 
         nt: Set[S] = set(transition_reward_map.keys())
         self.transition_reward_map = {
-            NonTerminal(s): Categorical(
-                {(NonTerminal(s1) if s1 in nt else Terminal(s1), r): p
+            NonTerminal(state=s): Categorical(distribution=\
+                {(NonTerminal(state=s1) if s1 in nt else Terminal(s1), r): p
                  for (s1, r), p in v}
             ) for s, v in transition_reward_map.items()
         }

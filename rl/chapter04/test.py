@@ -1,6 +1,7 @@
 from chapter04.simple_inventory import (SimpleInventoryDeterministicPolicy,
                                         SimpleInventoryMDPNoCap,
                                         SimpleInventoryStochasticPolicy)
+from loguru import logger
 
 if __name__ == '__main__':
     user_poisson_lambda = 2.0
@@ -17,6 +18,7 @@ if __name__ == '__main__':
                                            holding_cost=user_holding_cost,
                                            stockout_cost=user_stockout_cost)
 
+    logger.info("Running Deterministic Policy...")
     si_dp = SimpleInventoryDeterministicPolicy(
         reorder_point=user_reorder_point
     )
@@ -24,18 +26,19 @@ if __name__ == '__main__':
     oos_frac_dp = si_mdp_nocap.fraction_of_days_oos(policy=si_dp,
                                                     time_steps=user_time_steps,
                                                     num_traces=user_num_traces)
-    print(
+    logger.debug(
         f"Deterministic Policy yields {oos_frac_dp * 100:.2f}%"
         + " of Out-Of-Stock days"
     )
 
+    logger.info("Running the Stochastic Policy...")
     si_sp = SimpleInventoryStochasticPolicy(
         reorder_point_poisson_mean=user_reorder_point_poisson_mean)
 
     oos_frac_sp = si_mdp_nocap.fraction_of_days_oos(policy=si_sp,
                                                     time_steps=user_time_steps,
                                                     num_traces=user_num_traces)
-    print(
+    logger.debug(
         f"Stochastic Policy yields {oos_frac_sp * 100:.2f}%"
         + " of Out-Of-Stock days"
     )

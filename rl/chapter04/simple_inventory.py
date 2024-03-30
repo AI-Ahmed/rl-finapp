@@ -38,12 +38,10 @@ class SimpleInventoryDeterministicPolicy(
     DeterministicPolicy[InventoryState, IntLike]
 ):
     def __init__(self, reorder_point: IntLike):
-        self.reorder_point: IntLike = reorder_point  # r
-
         def action_for(s: InventoryState) -> IntLike:
-            return max(self.reorder_point - s.inventory_position(), 0)
+            return max(reorder_point - s.inventory_position(), 0)
 
-        super().__init__(action_for)
+        super().__init__(action_for=action_for, reorder_point=reorder_point)
 
 
 class SimpleInventoryStochasticPolicy(Policy[InventoryState, IntLike]):
@@ -55,7 +53,8 @@ class SimpleInventoryStochasticPolicy(Policy[InventoryState, IntLike]):
             key = jax.random.PRNGKey(random.randint(42, 1234))
             reorder_point_sample: IntLike = jax.random.poisson(key,
                                                                self.reorder_point_poisson_mean)
-            return jnp.max(reorder_point_sample - state.state.inventory_position(), 0)
+            return max(reorder_point_sample - state.state.inventory_position(), 0)
+        return SampledDistribution(action_func)
 
 
 @dataclass(frozen=True)
@@ -101,11 +100,11 @@ class SimpleInventoryMDPNoCap(MarkovDecisionProcess[InventoryState, IntLike]):
         count: int = 0
         high_fractile: IntLike = np.int32(poisson(self.poisson_lambda).ppf(0.98))
         start: InventoryState = random.choice(
-            [InventoryState(i, 0) for i in range(high_fractile + 1)])
+            [InventoryState(on_hand=i, on_order=0) for i in range(high_fractile + 1)])
 
         for _ in range(num_traces):
             steps = itertools.islice(
-                impl_mrp.simulate_reward(Constant(NonTerminal(start))),
+                impl_mrp.simulate_reward(Constant(value=NonTerminal(state=start))),
                 time_steps
             )
             for step in steps:
