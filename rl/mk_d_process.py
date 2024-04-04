@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Union, Iterable, Generic, TypeVar, Mapping, Sequence, Set
+from collections import defaultdict
+from typing import (Tuple, Union, Iterable, Generic,
+                    TypeVar, Mapping, Sequence, Set, DefaultDict)
 
 import chex
 from chex import dataclass
@@ -7,8 +9,10 @@ from chex import dataclass
 # import jax.numpy as jnp
 import numpy as np
 
-from gen_utils.distribution import Distribution, FiniteDistribution, SampledDistribution
-from mk_process import Terminal, NonTerminal, MarkovRewardProcess, State
+from gen_utils.distribution import (Distribution, FiniteDistribution,
+                                    Categorical, SampledDistribution)
+from mk_process import (Terminal, NonTerminal, State,
+                        MarkovRewardProcess, FiniteMarkovRewardProcess)
 from policy import Policy
 
 Array = Union[chex.Array, chex.ArrayNumpy]
@@ -52,7 +56,7 @@ class MarkovDecisionProcess(ABC, Generic[S, A]):
                 state: NonTerminal[S],
             ) -> Distribution[Tuple[State, FloatLike]]:
 
-                actions: Distribution[A] = policy.act(state) # TODO: Check why this produce None actions!!!!!!!!!!
+                actions: Distribution[A] = policy.act(state)
                 return actions.apply(lambda a: mdp.step(state, a))
         return RewardProcess()
 
@@ -109,3 +113,18 @@ class FiniteMarkovDecisionProcess(MarkovDecisionProcess[S, A]):
     def actions(self, state: NonTerminal[S]) -> Iterable[A]:
         return self.mapping[state].keys()
 
+    def apply_finite_policy(self, policy: FinitePolicy[S, A])\
+        -> FiniteMarkovRewardProcess[S]:
+
+        transition_mapping: Dict[S, FiniteDistribution[Tuple[S, FloatLike]]] = {}
+
+        for state in self.mapping:
+            action_map: ActionMapping[A, S] = self.mapping[state]
+            outcomes: DefaultDict[Tuple[S, FloatLike], FloatLike] = defaultdict(float)
+
+            actions = policy.act(state)
+            for action, p_action in actions:
+                for (s1, r), p in action_map[action]:
+                    outcomes[(s1.state, r)] += p_action * p
+            transition_mapping[state.state] = Categorical(outcomes)
+        return FiniteMarkovDecisionProcess(transition_mapping)

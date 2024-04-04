@@ -1,0 +1,89 @@
+[33mcommit e41a1722e3bb9fa64ccecc7bea3527945c1d05ff[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Sat Mar 30 05:15:59 2024 +0200
+
+    Update and add new mk
+
+[33mcommit c91af1e95f6e3a325bf7ba37b8f3bbabc637e135[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Wed Mar 27 04:26:32 2024 +0200
+
+    Update the code
+
+[33mcommit cc76058400d133aeb4e7d816199986fa2cf27c96[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Wed Feb 14 03:05:16 2024 +0200
+
+    add new class
+
+[33mcommit c1a3bf9c56f0d8c4c0ef972d1b7004108001186b[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Fri Feb 9 02:44:37 2024 +0200
+
+    Upload Markov Processes
+
+[33mcommit 568bb62eb539a48ac2290ef41dddb71402529e27[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Mon Jan 29 03:32:22 2024 +0200
+
+    add some docs string & refactorization
+
+[33mcommit c00ee32bdf7f24eed3e92e724d44438939233b8d[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Mon Jan 29 03:16:46 2024 +0200
+
+    update content & correction chapter03
+
+[33mcommit 2afa0490c408129a99c42f13f5e073b7a17fac87[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Mon Jan 22 03:31:28 2024 +0200
+
+    moved requirements.txt
+
+[33mcommit ca5ae635ff0abc285d30971504894a43c55aa899[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Mon Jan 22 03:29:44 2024 +0200
+
+    Added materials
+
+[33mcommit fe9a320a2564cd5af12348b23d5cd925c794fe12[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Sun Jan 21 23:45:11 2024 +0200
+
+    adjust docs
+
+[33mcommit fdcd43ba1fac9eaccaf9ca9cc31183646df98978[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Sun Jan 21 16:22:04 2024 +0200
+
+    update chapter 03 - Process2
+
+[33mcommit a1002951a7e201929195d67fc5df3894e2fb18e4[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Sat Jan 20 16:47:16 2024 +0200
+
+    Update chapter03 - Process1
+
+[33mcommit 06f81d0d3beb34016c070508f87e509e059a3481[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Fri Jan 19 01:34:42 2024 +0200
+
+    Upload part of Chapter03
+
+[33mcommit 8f05fd0e61759da74bf6a1f34fdf1077108557ab[m
+Author: AI-Ahmed <n.is.ccit@gmail.com>
+Date:   Thu Jan 18 02:30:57 2024 +0200
+
+    Upload chapter02
+
+[33mcommit 4cfdc433bc606531058c6b6f253bc540de003a0f[m
+Author: Ahmed Nabil <72295771+AI-Ahmed@users.noreply.github.com>
+Date:   Wed Jan 17 13:09:34 2024 +0200
+
+    Update README.md
+
+[33mcommit 8fdd1f545a4490c16e751dc25949194e08ede75a[m
+Author: Ahmed Nabil <72295771+AI-Ahmed@users.noreply.github.com>
+Date:   Wed Jan 17 00:40:48 2024 +0200
+
+    Initial commit

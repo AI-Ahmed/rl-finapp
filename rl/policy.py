@@ -1,4 +1,4 @@
-from typing import Union, Generic, TypeVar, Callable
+from typing import Union, Generic, TypeVar, Callable, Mapping
 from abc import ABC, abstractmethod
 # from dataclasses import dataclass
 
@@ -8,7 +8,7 @@ from chex import dataclass
 import numpy as np
 
 from mk_process import NonTerminal, Distribution
-from gen_utils.distribution import Constant, Choose
+from gen_utils.distribution import Constant, Choose, FiniteDistribution
 
 Array = Union[chex.Array, chex.ArrayNumpy]
 FloatLike = Union[float, np.float16, np.float32, np.float64]
@@ -39,3 +39,34 @@ class UniformPolicy(Policy[S, A]):
 
     def act(self, state: NonTerminal[S]) -> Choose[A]:
         return Choose(value=self.valid_actions(state.state))
+
+
+@dataclass(forzen=True)
+class FinitePolicy(Policy[S, A]):
+    policy_map: Mapping[S, FiniteDistribution[A]]
+
+    def __repr__(self) -> str:
+        display = ""
+        for s, d in self.policy_map.items():
+            display += f"For State {s}:\n"
+            for a, p in d:
+                display += f"\tDo Action {a} with Probability {p:.3f}\n"
+        return display
+
+    def act(self, state: NonTerminal[S]) -> FiniteDistribution[A]:
+        return self.policy_map[state.state]
+
+
+class FiniteDeterministicPolicy(FinitePolicy[S, A]):
+    action_for: Mapping[S, A]
+
+    def __init__(self, action_for: Mapping[S, A]):
+        self.action_for = action_for
+        super.__init__(policy_map={s: Constant(value=a)
+                                   for s, a in self.action_for.items()})
+
+    def __repr__(self) -> str:
+        display = ""
+        for s, a in self.action_for.items():
+            display += f"For State {s}: Do Action {a}\n"
+        return display
