@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import (Tuple, Union, Iterable, Generic,
+from typing import (Tuple, Union, Iterable, Generic, Dict,
                     TypeVar, Mapping, Sequence, Set, DefaultDict)
 
 import chex
@@ -10,10 +10,11 @@ from chex import dataclass
 import numpy as np
 
 from gen_utils.distribution import (Distribution, FiniteDistribution,
-                                    Categorical, SampledDistribution)
+                                    Categorical)
 from mk_process import (Terminal, NonTerminal, State,
                         MarkovRewardProcess, FiniteMarkovRewardProcess)
-from policy import Policy
+from policy import Policy, FinitePolicy
+from pprint import pprint
 
 Array = Union[chex.Array, chex.ArrayNumpy]
 FloatLike = Union[float, np.float16, np.float32, np.float64]
@@ -83,15 +84,15 @@ class FiniteMarkovDecisionProcess(MarkovDecisionProcess[S, A]):
     mapping: StateActionMapping[S, A]
     non_terminal_states: Sequence[NonTerminal[S]]
 
-    def __init_(
+    def __init__(
             self,
             mapping: Mapping[S, Mapping[A, FiniteDistribution[Tuple[S, FloatLike]]]]  # rewrite to reduce overhead
     ):
         non_terminals: Set[S] = set(mapping.keys())
-        self.mapping = {NonTerminal(state=s): {a: Categorical(\
-                value={(NonTerminal(state=s1) if s1 in non_terminals else Terminal(state=s1), r): p
-                    for (s1, r), p in v}
-                ) for a, v in d.items())} for s, d in mapping.items()}
+        self.mapping = {NonTerminal(state=s): {a: Categorical(
+            {(NonTerminal(state=s1) if s1 in non_terminals else Terminal(state=s1), r): p
+                for (s1, r), p in v}
+        ) for a, v in d.items()} for s, d in mapping.items()}
         self.non_terminal_states = list(self.mapping.keys())
 
     def __repr__(self) -> str:
@@ -113,18 +114,18 @@ class FiniteMarkovDecisionProcess(MarkovDecisionProcess[S, A]):
     def actions(self, state: NonTerminal[S]) -> Iterable[A]:
         return self.mapping[state].keys()
 
-    def apply_finite_policy(self, policy: FinitePolicy[S, A])\
-        -> FiniteMarkovRewardProcess[S]:
+    def apply_finite_policy(self, policy: FinitePolicy[S, A]) -> FiniteMarkovRewardProcess[S]:
 
         transition_mapping: Dict[S, FiniteDistribution[Tuple[S, FloatLike]]] = {}
 
         for state in self.mapping:
             action_map: ActionMapping[A, S] = self.mapping[state]
             outcomes: DefaultDict[Tuple[S, FloatLike], FloatLike] = defaultdict(float)
-
             actions = policy.act(state)
-            for action, p_action in actions:
+            for action, p_action in actions.table().items():
                 for (s1, r), p in action_map[action]:
                     outcomes[(s1.state, r)] += p_action * p
-            transition_mapping[state.state] = Categorical(outcomes)
-        return FiniteMarkovDecisionProcess(transition_mapping)
+
+            transition_mapping[state.state] = Categorical(distribution=outcomes)
+
+        return FiniteMarkovRewardProcess(transition_mapping)

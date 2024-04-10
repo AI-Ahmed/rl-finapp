@@ -14,8 +14,8 @@ Array = Union[chex.Array, chex.ArrayNumpy]
 FloatLike = Union[float, np.float16, np.float32, np.float64]
 IntLike = Union[int, np.int16, np.int32, np.float64]
 
-A = TypeVar('A', bound=IntLike)
-S = TypeVar('S', bound=Union[IntLike, Array])
+A = TypeVar('A')
+S = TypeVar('S')
 
 
 class Policy(ABC, Generic[S, A]):
@@ -30,7 +30,7 @@ class DeterministicPolicy(Policy[S, A]):
     reorder_point: IntLike
 
     def act(self, state: NonTerminal[S]) -> Constant[A]:
-        return Constant(value=self.action_for(state.state)) # TODO: THIS SHOULD HAVE APPLY
+        return Constant(value=self.action_for(state.state))
 
 
 @dataclass(frozen=True)
@@ -41,7 +41,7 @@ class UniformPolicy(Policy[S, A]):
         return Choose(value=self.valid_actions(state.state))
 
 
-@dataclass(forzen=True)
+@dataclass(frozen=True)
 class FinitePolicy(Policy[S, A]):
     policy_map: Mapping[S, FiniteDistribution[A]]
 
@@ -61,9 +61,9 @@ class FiniteDeterministicPolicy(FinitePolicy[S, A]):
     action_for: Mapping[S, A]
 
     def __init__(self, action_for: Mapping[S, A]):
-        self.action_for = action_for
-        super.__init__(policy_map={s: Constant(value=a)
-                                   for s, a in self.action_for.items()})
+        super().__init__(policy_map={s: Constant(value=a)
+                                     for s, a in action_for.items()})
+        object.__setattr__(self, "action_for", action_for)
 
     def __repr__(self) -> str:
         display = ""

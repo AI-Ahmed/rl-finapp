@@ -6,7 +6,6 @@ import chex
 from chex import dataclass
 
 import jax
-import jax.numpy as jnp
 import numpy as np
 
 from scipy.stats import poisson

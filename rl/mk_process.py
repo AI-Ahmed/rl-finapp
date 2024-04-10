@@ -2,6 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 # from dataclasses import dataclass
 from collections import defaultdict
+from pprint import pprint
 from typing import Generic, Callable, TypeVar, Iterable, Sequence, Mapping, Set, Tuple, Dict, Union
 from gen_utils.distribution import Distribution, FiniteDistribution, Categorical, SampledDistribution
 
@@ -72,8 +73,8 @@ class FiniteMarkovProcess(MarkovProcess[S]):
     def __init__(self, transition_map: Mapping[S, FiniteDistribution[S]]):
         non_terminals: Set[S] = set(transition_map.keys())
         self.transition_map = {
-                NonTerminal(s): Categorical(
-                    {NonTerminal(s1) if s1 in non_terminals else Terminal(s1): p for s1, p in v}
+                NonTerminal(state=s): Categorical(
+                    {NonTerminal(state=s1) if s1 in non_terminals else Terminal(state=s1): p for s1, p in v}
                     ) for s, v in transition_map.items()
         }
         self.non_terminal_states = list(self.transition_map.keys())
@@ -92,7 +93,6 @@ class FiniteMarkovProcess(MarkovProcess[S]):
     def transition(self, state: NonTerminal[S]) -> FiniteDistribution[State[S]]:
         return self.transition_map[state]
 
-    @jit
     def get_transtion_matrix(self) -> np.ndarray:
         """
         Computes the transtion probability matrix P
@@ -100,14 +100,13 @@ class FiniteMarkovProcess(MarkovProcess[S]):
         sz = np.int32(len(self.non_terminal_states))
         mat = np.zeros((sz, sz), dtype=np.float32)
 
-        vect_trans_prob = np.vectorize(lambda s1, s2: self.transition_map(s1).probability(s2), otypes=float32)
+        for i, s1 in enumerate(self.non_terminal_states):
+            for j, s2 in enumerate(self.non_terminal_states):
+                mat[i, j] = self.transition(s1).probability(s2)
 
-        i, j = np.meshgrid(range(sz), range(sz))
-
-        mat = vect_trans_prob(self.non_terminal_states[i], self.non_terminal_state[j])
         return mat
 
-    def get_stationary_dist(self) -> FiniteDistribution[S]:
+    def get_stationary_distribution(self) -> FiniteDistribution[S]:
         eig_vals, eig_vecs = np.linalg.eigh(self.get_transtion_matrix().T)
         index_of_first_unit_eig_val = np.where(np.abs(eig_vals - 1 < 1e-8))[0][0]
         eig_vec_of_unit_eig_val = np.real(eig_vecs[:, index_of_first_unit_eig_val])
@@ -115,6 +114,12 @@ class FiniteMarkovProcess(MarkovProcess[S]):
         return Categorical({
             self.non_terminal_states[i].state: ev
             for i, ev in enumerate(eig_vec_of_unit_eig_val / sum(eig_vec_of_unit_eig_val))
+        })
+
+    def display_stationary_distribution(self):
+        pprint({
+            s: round(p, 3)
+            for s, p in self.get_stationary_distribution()
         })
 
 
@@ -167,18 +172,18 @@ class FiniteMarkovRewardProcess(FiniteMarkovProcess[S], MarkovRewardProcess[S]):
         transition_map: Dict[S, FiniteDistribution[S]] = {}
 
         for state, trans in transition_reward_map.items():
-            probabilities: Dict[S, FloatLike] = defaultdict(FloatLike)
+            probabilities: Dict[S, FloatLike] = defaultdict(float)
             for (next_state, _), probability in trans:
                 probabilities[next_state] += probability
             transition_map[state] = Categorical(probabilities)
 
-        super().__ini__(transition_map)
+        super().__init__(transition_map)
 
         nt: Set[S] = set(transition_reward_map.keys())
         self.transition_reward_map = {
             NonTerminal(state=s): Categorical(distribution=\
                 {(NonTerminal(state=s1) if s1 in nt else Terminal(s1), r): p
-                 for (s1, r), p in v}
+                    for (s1, r), p in v}
             ) for s, v in transition_reward_map.items()
         }
         self.reward_function_vec = np.array([
@@ -193,3 +198,15 @@ class FiniteMarkovRewardProcess(FiniteMarkovProcess[S], MarkovRewardProcess[S]):
             np.eye(len(self.non_terminal_states)) - gamma * self.get_transtion_matrix(),
             self.reward_function_vec
         )
+
+    def display_reward_function(self):
+        pprint({
+            self.non_terminal_states[i]: round(r, 3)
+            for i, r in enumerate(self.reward_function_vec)
+        })
+
+    def display_value_function(self, gamma: float):
+        pprint({
+            self.non_terminal_states[i]: round(v, 3)
+            for i, v in enumerate(self.get_value_function_vec(gamma))
+        })

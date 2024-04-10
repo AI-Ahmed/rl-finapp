@@ -1,6 +1,6 @@
-from chapter04.simple_inventory import (SimpleInventoryDeterministicPolicy,
-                                        SimpleInventoryMDPNoCap,
-                                        SimpleInventoryStochasticPolicy)
+from chapter04.simple_inventory_nocap import (SimpleInventoryDeterministicPolicy,
+                                              SimpleInventoryMDPNoCap,
+                                              SimpleInventoryStochasticPolicy)
 from loguru import logger
 
 if __name__ == '__main__':
