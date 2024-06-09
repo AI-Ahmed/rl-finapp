@@ -6,11 +6,13 @@ from pprint import pprint
 from typing import Generic, Callable, TypeVar, Iterable, Sequence, Mapping, Set, Tuple, Dict, Union
 from gen_utils.distribution import Distribution, FiniteDistribution, Categorical, SampledDistribution
 
-
 import chex
 from chex import dataclass
+from distrax._src.utils import jittable
+
 import numpy as np
-from numba import jit, float32
+import jax.numpy as jnp
+
 
 Array = Union[chex.Array, chex.ArrayNumpy]
 FloatLike = Union[float, np.float16, np.float32, np.float64]
@@ -40,7 +42,25 @@ class Terminal(State[S]):
 
 @dataclass(frozen=True)
 class NonTerminal(State[S]):
+    r"""
+    JAX expects all elements in the PyTree to be sortable, but `NonTerminal` objects are not directly sortable.
+    This is causing the `TypeError` when attempts to use `tree_flatten`
+    on `FiniteMarkovDecisionProcess` in `policy_iteration`.
+
+    ```ipython
+    TypeError: '<' not supported between instances of 'NonTerminal' and 'NonTerminal'
+    ```
+    """
     state: S
+
+    def inventory_position(self) -> IntLike:
+        return self.on_hand + self.on_order
+
+    def __lt__(self, other: NonTerminal) -> bool:
+        return self.state < other.state
+
+    def __eq__(self, other: NonTerminal) -> bool:
+        return self.state == other.state
 
 
 class MarkovProcess(ABC, Generic[S]):
@@ -66,7 +86,7 @@ class MarkovProcess(ABC, Generic[S]):
 Transition = Mapping[NonTerminal[S], FiniteDistribution[State[S]]]
 
 
-class FiniteMarkovProcess(MarkovProcess[S]):
+class FiniteMarkovProcess(jittable.Jittable, MarkovProcess[S]):
     non_terminal_state: Sequence[NonTerminal[S]]
     transition_map: Transition[S]
 
@@ -93,7 +113,7 @@ class FiniteMarkovProcess(MarkovProcess[S]):
     def transition(self, state: NonTerminal[S]) -> FiniteDistribution[State[S]]:
         return self.transition_map[state]
 
-    def get_transtion_matrix(self) -> np.ndarray:
+    def get_transition_matrix(self) -> np.ndarray:
         """
         Computes the transtion probability matrix P
         """
@@ -107,9 +127,9 @@ class FiniteMarkovProcess(MarkovProcess[S]):
         return mat
 
     def get_stationary_distribution(self) -> FiniteDistribution[S]:
-        eig_vals, eig_vecs = np.linalg.eigh(self.get_transtion_matrix().T)
-        index_of_first_unit_eig_val = np.where(np.abs(eig_vals - 1 < 1e-8))[0][0]
-        eig_vec_of_unit_eig_val = np.real(eig_vecs[:, index_of_first_unit_eig_val])
+        eig_vals, eig_vecs = jnp.linalg.eigh(self.get_transition_matrix().T)
+        index_of_first_unit_eig_val = jnp.where(np.abs(eig_vals - 1 < 1e-8))[0][0]
+        eig_vec_of_unit_eig_val = jnp.real(eig_vecs[:, index_of_first_unit_eig_val])
 
         return Categorical({
             self.non_terminal_states[i].state: ev
@@ -182,10 +202,10 @@ class FiniteMarkovRewardProcess(FiniteMarkovProcess[S], MarkovRewardProcess[S]):
         nt: Set[S] = set(transition_reward_map.keys())
         self.transition_reward_map = {
             NonTerminal(state=s): Categorical(distribution=\
-                {(NonTerminal(state=s1) if s1 in nt else Terminal(s1), r): p
-                    for (s1, r), p in v}
-            ) for s, v in transition_reward_map.items()
-        }
+                                              {(NonTerminal(state=s1)
+                                               if s1 in nt else Terminal(s1), r): p
+                                               for (s1, r), p in v})
+            for s, v in transition_reward_map.items()}
         self.reward_function_vec = np.array([
             sum(probability * reward for (_, reward), probability in self.transition_reward_map[state])
             for state in self.non_terminal_states])
@@ -193,11 +213,10 @@ class FiniteMarkovRewardProcess(FiniteMarkovProcess[S], MarkovRewardProcess[S]):
     def transition_reward(self, state: NonTerminal[S]) -> StateReward[S]:
         return self.transition_reward_map[state]
 
-    def get_value_function_vec(self, gamma: FloatLike) -> np.ndarray:
-        return np.linalg.solve(
-            np.eye(len(self.non_terminal_states)) - gamma * self.get_transtion_matrix(),
-            self.reward_function_vec
-        )
+    def get_value_function_vec(self, gamma: FloatLike) -> Array:
+        return jnp.linalg.solve(
+                jnp.eye(len(self.non_terminal_states)) - gamma * self.get_transition_matrix(),
+                self.reward_function_vec)
 
     def display_reward_function(self):
         pprint({

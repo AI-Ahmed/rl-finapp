@@ -1,5 +1,8 @@
+from __future__ import annotations
 import chex
 from chex import dataclass
+from distrax._src.utils import jittable
+
 from typing import Tuple, Dict, Mapping, Union
 from mk_d_process import FiniteMarkovDecisionProcess
 from gen_utils.distribution import Categorical
@@ -14,11 +17,25 @@ IntLike = Union[int, np.int16, np.int32, np.float64]
 
 @dataclass(frozen=True)
 class InventoryState:
+    r"""
+    JAX expects all elements in the PyTree to be sortable, but `InventoryState` objects are not directly sortable.
+    This is causing the `TypeError` when attempts to use `tree_flatten` on `FinitePolicy` in `policy_iteration`.
+
+    ```ipython
+    TypeError: '<' not supported between instances of 'InventoryState' and 'InventoryState'
+    ```
+    """
     on_hand: IntLike
     on_order: IntLike
 
     def inventory_position(self) -> IntLike:
         return self.on_hand + self.on_order
+
+    def __lt__(self, other: InventoryState) -> bool:
+        return (self.on_hand, self.on_order) < (other.on_hand, other.on_order)
+
+    def __eq__(self, other: InventoryState) -> bool:
+        return (self.on_hand, self.on_order) == (other.on_hand, other.on_order)
 
 
 InvOrderMapping = Mapping[
@@ -27,7 +44,8 @@ InvOrderMapping = Mapping[
 ]
 
 
-class SimpleInventoryMDPCap(FiniteMarkovDecisionProcess[InventoryState, IntLike]):
+class SimpleInventoryMDPCap(jittable.Jittable,
+                            FiniteMarkovDecisionProcess[InventoryState, IntLike]):
 
     def __init__(
         self,

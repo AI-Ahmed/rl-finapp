@@ -24,7 +24,7 @@ A = TypeVar('A', bound=IntLike)
 S = TypeVar('S', bound=Union[Terminal, NonTerminal, IntLike, Array])
 
 
-@dataclass(frozen=True)
+@dataclass(eq=True, frozen=True)
 class InventoryState:
     on_hand: IntLike  # alpha
     on_order: IntLike  # beta

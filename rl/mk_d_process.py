@@ -14,7 +14,6 @@ from gen_utils.distribution import (Distribution, FiniteDistribution,
 from mk_process import (Terminal, NonTerminal, State,
                         MarkovRewardProcess, FiniteMarkovRewardProcess)
 from policy import Policy, FinitePolicy
-from pprint import pprint
 
 Array = Union[chex.Array, chex.ArrayNumpy]
 FloatLike = Union[float, np.float16, np.float32, np.float64]
@@ -112,7 +111,7 @@ class FiniteMarkovDecisionProcess(MarkovDecisionProcess[S, A]):
         return action_map[action]
 
     def actions(self, state: NonTerminal[S]) -> Iterable[A]:
-        return self.mapping[state].keys()
+        return list(self.mapping[state].keys())
 
     def apply_finite_policy(self, policy: FinitePolicy[S, A]) -> FiniteMarkovRewardProcess[S]:
 

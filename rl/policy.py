@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 import chex
 from chex import dataclass
+from distrax._src.utils import jittable
 
 import numpy as np
 
@@ -57,11 +58,13 @@ class FinitePolicy(Policy[S, A]):
         return self.policy_map[state.state]
 
 
-class FiniteDeterministicPolicy(FinitePolicy[S, A]):
+class FiniteDeterministicPolicy(jittable.Jittable, FinitePolicy[S, A]):
     action_for: Mapping[S, A]
 
     def __init__(self, action_for: Mapping[S, A]):
         super().__init__(policy_map={s: Constant(value=a)
+                                     if not isinstance(a, Array)
+                                     else Constant(value=a.item())
                                      for s, a in action_for.items()})
         object.__setattr__(self, "action_for", action_for)
 

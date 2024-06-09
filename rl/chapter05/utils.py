@@ -1,5 +1,10 @@
 import chex
+
+import jax
+import jax.numpy as jnp
+
 import numpy as np
+
 from typing import Callable, TypeVar, Optional, Union, Iterator
 
 
@@ -11,21 +16,85 @@ S = TypeVar('S')
 X = TypeVar('X')
 
 
-def converge(values: Array, done: Callable[[X, X], bool]):
-    '''Read from an iterator until two consecutive values satisfy the
-       given done function or the input iterator ends.
+def iterate(step: Callable[[X], X], start: X) -> Iterator[X]:
+    '''Find the fixed point of a function f by applying it to its own
+    result, yielding each intermediate value.
 
-       Raises an error if the input iterator is empty.
+    That is, for a function f, iterate(f, x) will give us a generator
+    producing:
 
-       Will loop forever if the input iterator doesn't end *or* converge.
+    x, f(x), f(f(x)), f(f(f(x)))...
+
     '''
-    a = values[0]
-    for i in range(values.shape[0] - 1):
-        b = values[i+1]
+    state = start
+
+    while True:
+        yield state
+        state = step(state)
+
+
+def iterate_jax(step: Callable[[X], X], start: X):
+    """
+    Find the fixed point of a function f by applying iit to its own
+    result, yielding each itermediate value.
+
+    that is, for a function f, iterate(f, x) will give us a generator
+    producing:
+
+    x, f(x), f(f(x)), f(f(f(x))), ...
+    """
+    def body_fn(carry):
+        i, conv, state, step = carry
+        return i + 1, conv, step(state), state
+
+    def cond_fn(carry):
+        i, conv, _, _ = carry
+        return jnp.logical_not(conv)
+
+    state = start
+
+    init_val = (1, False, step, state)
+    _, _, _, state = jax.lax.while_loop(cond_fn, body_fn, init_val)
+    return state
+
+
+def converge(values: Iterator[X], done: Callable[[X, X], bool]) -> Iterator[X]:
+    '''Read from an iterator until two consecutive values satisfy the
+    given done function or the input iterator ends.
+
+    Raises an error if the input iterator is empty.
+
+    Will loop forever if the input iterator doesn't end *or* converge.
+
+    '''
+    a = next(values, None)
+    if a is None:
+        return
+
+    yield a
+
+    for b in values:
         yield b
         if done(a, b):
             return
+
         a = b
+
+
+def converge_jax(values: Array, done: Callable[[X, X], bool]) -> Array:
+    def body_fn(states):
+        i, converged, prev_val, values = states
+        curr_val = values[i]
+        converged = done(prev_val, curr_val)
+        return i + 1, converged, curr_val, values
+
+    def cond_fn(states):
+        i, converged, _, _ = states
+        return jnp.logical_and(i < values.shape[0], jnp.logical_not(converged))
+
+    init_val = (1, False, values[0], values)  # Start with the second element
+    _, _, _, values = jax.lax.while_loop(cond_fn, body_fn, init_val)
+    return values
 
 
 def last(values: Iterator[Array]) -> Optional[X]:
@@ -51,7 +120,10 @@ def converged(values: Array,
 
     Will loop forever if the input iterator doesn't end *or* converge.
     '''
-    result = last(converge(values, done))
+    if isinstance(values, Array):
+        result = last(converge_jax(values, done))
+    else:
+        result = last(converge(values, done))
 
     if result is None:
         raise ValueError("converged called on an empty iterator")
